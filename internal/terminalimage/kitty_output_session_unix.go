@@ -221,7 +221,7 @@ func (s *kittyOutputWorker) write(ctx context.Context, write func(io.Writer) err
 			err = errors.Join(err, s.Close())
 		}
 	}()
-	s.used.Store(false)
+	s.used.Store(true)
 	_, _, err = s.control.WriteMsgUnix([]byte{'J'}, unix.UnixRights(int(dataRead.Fd())), nil)
 	if err != nil {
 		return false, err
@@ -229,7 +229,7 @@ func (s *kittyOutputWorker) write(ctx context.Context, write func(io.Writer) err
 	dataRead.Close()
 	ready, fds, readyErr := readKittyControl(s.control)
 	closeKittyDescriptors(fds)
-	if readyErr != nil || ready != 'A' {
+	if readyErr != nil || ready != 'A' || len(fds) != 0 {
 		return false, errors.Join(errors.New("native image writer did not become ready"), readyErr)
 	}
 	done = make(chan error, 1)
@@ -254,7 +254,7 @@ func (s *kittyOutputWorker) write(ctx context.Context, write func(io.Writer) err
 	ack := <-done
 	acknowledged = true
 	completed = true
-	return true, errors.Join(writeErr, closeErr, ack)
+	return writer.written, errors.Join(writeErr, closeErr, ack)
 }
 
 func closeKittyDescriptors(fds []int) {
